@@ -18,6 +18,7 @@
     "@types/source-map-support": "^0.5.6",
     "adonis-preset-ts": "^2.1.0",
     "autoprefixer": "^10.4.13",
+    "file-loader": "^6.0.0",
     "pino-pretty": "^9.4.0",
     "postcss": "^8.4.21",
     "postcss-loader": "^7.0.2",

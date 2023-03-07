@@ -33,13 +33,9 @@ a {
 }
 
 main {
-  max-width: 620px;
-  margin: auto;
+  max-width: 100vw;
   height: 100vh;
-  padding: 0 30px;
-  align-items: center;
-  display: flex;
-  justify-content: center;
+  margin: auto;
 }
 
 .title {

@@ -1,6 +1,6 @@
 import '../css/app.css'
 
-OpenCamera();
+/* OpenCamera();
 
 async function OpenCamera(): Promise<void> {
     let All_mediaDevices: MediaDevices = navigator.mediaDevices;
@@ -20,4 +20,4 @@ async function OpenCamera(): Promise<void> {
     videoElement.srcObject = stream;
 
     videoElement.onloadedmetadata = () => videoElement.play();
-}
+} */
