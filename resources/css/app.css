@@ -4,8 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
+.class-width {
+  width: 32rem;
+}
+
+.left-fixed-distance {
+  left: 42rem;
+}
+
+.heading-color {
+  color: #5A45FF;
+}
+
+.mt-heading {
+  margin-top: 0.4rem;
+}
+
+.rotating {
+  animation: rotate 1s linear infinite;
+}
+
+@keyframes rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
 html, body {
-  background-color: #F7F8FA;
   font-family: 'Poppins', sans-serif;
   height: 100vh;
   color: #46444c;
@@ -33,44 +57,13 @@ a {
 }
 
 main {
-  max-width: 100vw;
-  height: 100vh;
   margin: auto;
-}
-
-.title {
-  font-size: 50px;
-  line-height: 50px;
-  margin-bottom: 10px;
-  color: #17161A;
-}
-
-.subtitle {
-  font-size: 26px;
-  margin-bottom: 40px;
 }
 
 p {
   margin-bottom: 20px;
 }
 
-main ul {
-  list-style: none;
-}
-
-main li {
-  margin-bottom: 5px;
-  position: relative;
-  padding-left: 25px;
-}
-
-main li:before {
-  content: '—';
-  position: absolute;
-  left: 0;
-}
-
 main code {
   font-size: 16px;
-  background: #e6e2ff;
 }

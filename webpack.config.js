@@ -57,10 +57,10 @@ Encore.addEntry('app', './resources/ts/app.ts').enableTypeScriptLoader()
 | we must copy them manually.
 |
 */
-//Encore.copyFiles({
-//  from: './resources/images',
-//  to: 'images/[path][name].[hash:8].[ext]',
-//})
+Encore.copyFiles({
+  from: './resources/images',
+  to: 'images/[path][name].[hash:8].[ext]',
+})
 
 /*
 |--------------------------------------------------------------------------

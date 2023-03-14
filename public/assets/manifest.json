@@ -1,5 +1,11 @@
 {
   "assets/app.css": "http://localhost:8080/assets/app.css",
   "assets/app.js": "http://localhost:8080/assets/app.js",
-  "assets/images/trash.png": "http://localhost:8080/assets/images/trash.23fa9fd4.png"
+  "assets/images/trash.png": "http://localhost:8080/assets/images/trash.23fa9fd4.png",
+  "assets/images/close.png": "http://localhost:8080/assets/images/close.bc7c4638.png",
+  "assets/images/close-filled.png": "http://localhost:8080/assets/images/close-filled.e15e230a.png",
+  "assets/images/video-camera.png": "http://localhost:8080/assets/images/video-camera.1c50ba0d.png",
+  "assets/images/add.png": "http://localhost:8080/assets/images/add.aa415a5c.png",
+  "assets/images/add-blue.png": "http://localhost:8080/assets/images/add-blue.eca3940e.png",
+  "assets/images/loading-indicator.png": "http://localhost:8080/assets/images/loading-indicator.90f73a5e.png"
 }
