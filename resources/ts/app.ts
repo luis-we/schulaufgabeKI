@@ -44,22 +44,20 @@ async function StartTraining(): Promise<void> {
 
         _class.images.forEach(image => {
             index++;
-            formData.append(label, image.blob, `${label}_${index}.jpeg`);
+            formData.append('files', image.blob, `${label}_${index}.jpeg`);
         });
     });
 
     try {
         const response: Response = await fetch('http://127.0.0.1:5000', {
-            method: 'POST',
-            
-            headers: {
-                "Content-Type": "multipart/form-data",
-            },
-    
+            method: 'POST',    
             body: formData
         });
 
+        const data: any = await response.json();
+
         console.log(response);
+        console.log(data);
     }
     catch(error: unknown) {
         console.log('connection failed');
