@@ -12,6 +12,14 @@
   left: 42rem;
 }
 
+.left-fixed-distance-short {
+  left: 42rem;
+}
+
+.left-fixed-distance-long {
+  left: 62rem;
+}
+
 .heading-color {
   color: #5A45FF;
 }
