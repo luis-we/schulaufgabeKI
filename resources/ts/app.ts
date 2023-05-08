@@ -54,10 +54,9 @@ async function StartTraining(): Promise<void> {
             body: formData
         });
 
-        const data = await response.json();
+        const data: any = await response.json();
 
         console.log(response);
-
         console.log(data);
     }
     catch(error: unknown) {
