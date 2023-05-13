@@ -1,11 +1,15 @@
 {
   "assets/app.css": "http://localhost:8080/assets/app.css",
   "assets/app.js": "http://localhost:8080/assets/app.js",
-  "assets/images/trash.png": "http://localhost:8080/assets/images/trash.23fa9fd4.png",
   "assets/images/add-blue.png": "http://localhost:8080/assets/images/add-blue.eca3940e.png",
   "assets/images/loading-indicator.png": "http://localhost:8080/assets/images/loading-indicator.90f73a5e.png",
+  "assets/images/refresh.png": "http://localhost:8080/assets/images/refresh.ac8e7416.png",
   "assets/images/close.png": "http://localhost:8080/assets/images/close.bc7c4638.png",
+  "assets/images/checkbox-invalid.png": "http://localhost:8080/assets/images/checkbox-invalid.6ab7cdda.png",
+  "assets/images/checkbox-valid.png": "http://localhost:8080/assets/images/checkbox-valid.6611bccf.png",
+  "assets/images/trash.png": "http://localhost:8080/assets/images/trash.5829d482.png",
   "assets/images/close-filled.png": "http://localhost:8080/assets/images/close-filled.e15e230a.png",
   "assets/images/add.png": "http://localhost:8080/assets/images/add.aa415a5c.png",
+  "assets/images/checkbox-empty.png": "http://localhost:8080/assets/images/checkbox-empty.73f2542a.png",
   "assets/images/video-camera.png": "http://localhost:8080/assets/images/video-camera.1c50ba0d.png"
 }

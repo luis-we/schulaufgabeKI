@@ -28,7 +28,11 @@
 				<div id="class-template" class="mb-6 bg-white rounded-xl shadow-md flex flex-col justify-between">
 					<div class="h-14 rounded-t-xl border-b border-b-gray-300 flex flex-row items-center justify-between px-5 pt-1">
 						<input class-label class="text-xl transition duration-200 text-slate-900 px-2 py-1 w-2/3 appearance-none rounded-xl leading-tight border-2 border-white cursor-pointer focus:outline-none focus:bg-blue-100 hover:text-blue-600 focus:text-slate-900"/>
-						<button delete-class><img class="w-5 brightness-0" src="{{ asset('assets/images/trash.png') }}" alt="delete"/></button>
+						<span class="flex flex-row items-center space-x-3">
+							<button select-class disabled class="opacity-75 disabled:opacity-30 disabled:hover:opacity-30 hover:opacity-100 transition duration-100"><img select-class-image class="w-5" src-checked="{{ asset('assets/images/checkbox-valid.png') }}" src-empty="{{ asset('assets/images/checkbox-empty.png') }}" src="{{ asset('assets/images/checkbox-empty.png') }}"/></button>
+							<button clear-class disabled class="opacity-75 disabled:opacity-30 disabled:hover:opacity-30 hover:opacity-100 transition duration-100"><img class="w-5" src="{{ asset('assets/images/refresh.png') }}"/></button>
+							<button delete-class disabled class="opacity-75 disabled:opacity-30 disabled:hover:opacity-30 hover:opacity-100 transition duration-100"><img class="w-5" src="{{ asset('assets/images/trash.png') }}" alt="delete"/></button>
+						</span>
 					</div>
 					
 					<div class="flex flex-row">
@@ -72,7 +76,7 @@
 			<div class="fixed w-56 bg-white p-5 rounded-xl top-1/2 -translate-y-1/2 left-fixed-distance-short shadow-md">
 				<p class="font-medium text-lg mb-4">Training</p>
 				
-				<button id="train-model" class="w-full bg-blue-500 flex justify-center items-center px-10 rounded-md h-10 transition duration-200 text-xs font-medium text-white hover:bg-blue-600 height-fit disabled:hover:bg-blue-500">
+				<button id="train-model" disabled class="bg-blue-500 disabled:bg-blue-300 hover:bg-blue-600 disabled:hover:bg-blue-300 height-fit w-full flex justify-center items-center px-10 rounded-md h-10 transition duration-200 text-xs font-medium text-white">
 					<img class="w-4 hidden rotating" src="{{ asset('assets/images/loading-indicator.png') }}"/>
 					<span>Model trainieren</span>
 				</button>
@@ -81,19 +85,66 @@
 			<div class="fixed w-96 bg-white p-5 rounded-xl top-1/2 -translate-y-1/2 left-fixed-distance-long shadow-md">
 				<div class="flex flex-row w-full items-center justify-between mb-4">
 					<p class="font-medium text-lg mb-0">Model</p>
-					<p class="font-normal text-md mb-0">kein Model vorhanden</p>
+					<span class="flex flex-row items-center space-x-3">
+						<p id="model-info" class="font-normal text-md mb-0">kein Model vorhanden</p>
+						<img id="model-checkbox" class="w-4" src-valid="{{ asset('assets/images/checkbox-valid.png') }}" src-invalid="{{ asset('assets/images/checkbox-invalid.png') }}" src="{{ asset('assets/images/checkbox-invalid.png') }}"/>
+					</span>
 				</div>
 
 				<div class="flex flex-row w-full items-center justify-between mb-4">
 					<p class="font-medium text-lg mb-0">Arduino</p>
-					<p class="font-normal text-md mb-0">kein Arduino verbunden</p>
+					<span class="flex flex-row items-center space-x-3">
+						<p id="arduino-info" class="font-normal text-md mb-0">nicht verbunden</p>
+						<img id="arduino-checkbox" class="w-4" src-valid="{{ asset('assets/images/checkbox-valid.png') }}" src-invalid="{{ asset('assets/images/checkbox-invalid.png') }}" src="{{ asset('assets/images/checkbox-invalid.png') }}"/>
+					</span>
 				</div>
 				
-				<button id="start-application" class="w-full bg-blue-500 flex justify-center items-center px-10 rounded-md h-10 transition duration-200 text-xs font-medium text-white hover:bg-blue-600 height-fit disabled:hover:bg-blue-500">
-					<img class="w-4 hidden rotating" src="{{ asset('assets/images/loading-indicator.png') }}"/>
-					<span>Starte App</span>
+				<button id="start-sorting" disabled class="bg-blue-500 disabled:bg-blue-300 disabled:hover:bg-blue-300 hover:bg-blue-600 w-full flex justify-center items-center px-10 rounded-md h-10 transition duration-200 text-xs font-medium text-white height-fit">
+					<span>Starte Sorter</span>
 				</button>
 			</div>
+
+			<div id="sorting-wrapper" class="hidden pb-20 space-y-10 w-10/12 bg-slate-50 p-5 rounded-xl top-1/2 left-1/2 -translate-y-1/2 -translate-x-1/2 z-50">
+				<div class="flex items-center justify-end mb-16">
+					<button id="stop-sorting" class="w-48 bg-blue-500 flex justify-center items-center px-10 rounded-md h-10 transition duration-200 text-xs font-medium text-white hover:bg-blue-600 height-fit">
+						<span>Stoppe Sorter</span>
+					</button>
+				</div>
+
+				<div class="flex items-strech justify-evenly">
+					<div class="w-3/12 bg-white flex flex-col items-center justify-center shadow-lg rounded-md space-y-10">
+						<h3 id="first-class-label" class="text-3xl font-semibold mb-5">Klasse 1</h3>
+						<span id="first-class-counter" class="text-8xl font-semibold">0</span>
+					</div>
+					
+					<div class="bg-white rounded-md flex flex-col items-center shadow-lg">
+						<video id="sorter-video" disablepictureinpicture class="pointer-events-none max-w-sm w-96 h-auto rounded-t-md bg-gray-800"></video>
+						<hr class="h-1 w-full border-0 bg-tiny-color mb-10"/>
+						<div class="flex justify-center justify-items-stretch space-x-1 items-center h-5 w-11/12 mb-5">
+							<div class="h-full w-5/12 flex justify-end">
+								<hr id="first-class-prediction-value" class="h-full w-full border-0 bg-blue-500 rounded-l-md rounded-sm"/>
+							</div>
+							
+							<div class="h-full flex items-center justify-center w-2/12 bg-blue-500 rounded-sm">
+								<span id="prediction-value" class="text-white text-sm font-medium">99%</span>
+								<img id="prediction-waiting-indicator" class="w-3 hidden rotating" src="{{ asset('assets/images/loading-indicator.png') }}"/>
+							</div>
+							
+							<div class="h-full w-5/12 flex justify-start">
+								<hr id="second-class-prediction-value" class="h-full w-full border-0 bg-blue-500 rounded-r-md rounded-sm"/>
+							</div>
+						</div>
+						<span id="prediction-label" class="text-xl font-semibold mb-7">Unbestimmt</span>
+					</div>
+
+					<div class="w-3/12 bg-white flex flex-col items-center justify-center shadow-lg rounded-md space-y-10">
+						<h3 id="second-class-label" class="text-3xl font-semibold mb-5">Klasse 2</h3>
+						<span id="second-class-counter" class="text-8xl font-semibold">0</span>
+					</div>
+				</div>
+			</div>
+
+			<div id="background-layer" class="hidden z-40 top-0 left-0 h-full w-full bg-black opacity-30"></div>
 
 			<canvas id="canvas" class="bg-gray-500 h-96 opacity-0 -z-50 fixed top-1/2 -translate-x-1/2 -translate-y-1/2"></canvas>
 		</main>	
