@@ -21,6 +21,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
 class Data(BaseModel):
     state: int
     
@@ -30,5 +31,4 @@ async def controllServo(data: Data):
     
 @app.post("/connect")
 async def checkConnection():
-    
     return True
