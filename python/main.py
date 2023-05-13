@@ -1,5 +1,7 @@
 from fastapi import FastAPI, File, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi import Request
+from pydantic import BaseModel
 import tensorflow as tf
 import numpy as np
 import cv2
@@ -19,51 +21,14 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
-
-@app.post("/")
-async def create_files(files: list[UploadFile] = File(...)):
-    class_names = {}
+class Data(BaseModel):
+    state: int
     
-    train_labels = []
-    train_images = []
+@app.post("/prediction")
+async def controllServo(data: Data):
+    print(data)
     
-    index = 0
-
-    for file in files:
-        class_name = file.filename.split("_")[0]
-
-        if class_name not in class_names:
-            class_names[class_name] = index
-            index += 1
-
-    for file in files:
-        class_name = file.filename.split("_")[0]
-
-        fileContent = await file.read()
-        imageArray = np.fromstring(fileContent, np.uint8)
-        
-        image = cv2.imdecode(imageArray, cv2.IMREAD_COLOR)
-
-        train_images.append(image)
-        train_labels.append(class_names[class_name])
-
-    train_images = np.array(train_images, dtype='float32')
-    train_labels = np.array(train_labels, dtype='int32')
-
-    model = tf.keras.Sequential([
-        tf.keras.layers.Flatten(input_shape=(480, 640, 3)),
-        tf.keras.layers.Dense(128, activation='relu'),
-        tf.keras.layers.Dense(10)
-    ])
-
-    model.compile(optimizer='adam', loss=tf.keras.losses.SparseCategoricalCrossentropy(from_logits=True), metrics=['accuracy'])
+@app.post("/connect")
+async def checkConnection():
     
-    model.fit(train_images, train_labels, epochs=10)
-
-    model_content = model.to_json()
-
-    return {
-        'model': model_content,
-        'labels': class_names
-    }
-    
+    return True
