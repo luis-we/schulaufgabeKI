@@ -3,9 +3,14 @@ import { ImageClassifier, Prediction } from "./imageClassifier";
 export default class TinySorter {
     private imageClassifier: ImageClassifier;
 
+    public onConnectionFailure: () => void = () => {}; 
+
     private sorterVideo: HTMLVideoElement;
 
     private isSorting: boolean = false;
+
+    private htmlSortingWrapper: HTMLDivElement;
+    private htmlBackgroundLayer: HTMLDivElement;
 
     private firstClassLabelDisplay: HTMLHeadingElement;
     private secondClassLabelDisplay: HTMLHeadingElement;
@@ -58,10 +63,13 @@ export default class TinySorter {
         this.secondClassPredictionValueDisplay.style.width = value.toString() + '%';
     }
 
-    constructor(imageClassifier: ImageClassifier, sorterVideo: HTMLVideoElement) {
+    constructor(imageClassifier: ImageClassifier) {
         this.imageClassifier = imageClassifier;
 
-        this.sorterVideo = sorterVideo;
+        this.sorterVideo = document.querySelector('#sorter-video')!;;
+
+        this.htmlSortingWrapper = document.querySelector('#sorting-wrapper')!;
+        this.htmlBackgroundLayer = document.querySelector('#background-layer')!;
 
         this.firstClassLabelDisplay = document.querySelector('#first-class-label')!;
         this.secondClassLabelDisplay = document.querySelector('#second-class-label')!;
@@ -85,8 +93,32 @@ export default class TinySorter {
 
         this.predictionLabel = 'Unbestimmt'
         this.predictionValue = 0;
+    }
 
-        this.Handle();
+    private async OpenSortingView(): Promise<void> {
+        let All_mediaDevices: MediaDevices = navigator.mediaDevices;
+
+        if (!All_mediaDevices || !All_mediaDevices.getUserMedia) {
+            console.log('no camera found');
+            return;
+        }
+    
+        let stream: MediaStream = await All_mediaDevices.getUserMedia({
+            video: true,
+            audio: false
+        });
+    
+        this.sorterVideo.srcObject = stream;
+    
+        this.sorterVideo.onloadedmetadata = () => this.sorterVideo.play();
+    
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    
+        this.htmlSortingWrapper.classList.remove('hidden');
+        this.htmlBackgroundLayer.classList.remove('hidden');
+    
+        this.htmlSortingWrapper.classList.add('fixed');
+        this.htmlBackgroundLayer.classList.add('fixed');
     }
 
     private async Wait(milliseconds: number): Promise<void> {
@@ -96,7 +128,7 @@ export default class TinySorter {
         this.predictionValueDisplay.classList.add('hidden');
         this.waitingIndicatorDisplay.classList.remove('hidden');
 
-        this.predictionLabel = 'Warte auf Arduino';
+        this.predictionLabel = 'Warte auf neues Objekt';
 
         await new Promise(resolve => setTimeout(resolve, milliseconds));
 
@@ -105,6 +137,8 @@ export default class TinySorter {
     }
 
     public async Handle(): Promise<void> {
+        await this.OpenSortingView();
+
         this.isSorting = true;
 
         while(this.isSorting) {
@@ -116,14 +150,22 @@ export default class TinySorter {
             }
 
             if(prediction.result.class == Object.entries(this.imageClassifier.labels)[0][1]) {
+                const sucessfull: boolean = await this.SendPredictionToArduino(1);
+                
+                if(!sucessfull) return;
+
                 this.firstClassCounter = this._firstClassCounter + 1;
             }
             
             if(prediction.result.class == Object.entries(this.imageClassifier.labels)[1][1]) {
+                const sucessfull: boolean = await this.SendPredictionToArduino(2);
+                
+                if(!sucessfull) return;
+
                 this.secondClassCounter = this._secondClassCounter + 1;
             }
 
-            await this.Wait(3000);
+            await this.Wait(5000);
         }
     }
 
@@ -138,27 +180,77 @@ export default class TinySorter {
                 continue;
             }
 
-            if(prediction.result.percentage < 50) {
-                this.predictionLabel = 'Unbestimmt'
-                prediction = null;
-                
-                await new Promise(resolve => setTimeout(resolve, 100));
-                continue;
-            }
-
-            this.predictionLabel = prediction.result.class.replace('_', ' ');
             this.predictionValue = prediction.result.percentage;
     
             this.firstClassPredictionValue = prediction.predictions[0].percentage;
             this.secondClassPredictionValue = prediction.predictions[1].percentage
-    
+
+            if(prediction.result.percentage < 75) {
+                this.predictionLabel = 'Unbestimmt'
+
+                prediction = null;
+            }
+            else {
+                this.predictionLabel = prediction.result.class.replace('_', ' ');
+            }
+
             await new Promise(resolve => setTimeout(resolve, 100));
         }
 
         return prediction;
     }
 
+    private async SendPredictionToArduino(state: number): Promise<boolean> {
+        try {
+            this.firstClassPredictionValue = 0;
+            this.secondClassPredictionValue = 0;
+    
+            this.predictionValueDisplay.classList.add('hidden');
+            this.waitingIndicatorDisplay.classList.remove('hidden');
+    
+            this.predictionLabel = 'Warte auf Arduino';
+
+            const response: Response = await fetch('http://127.0.0.1:5000/prediction', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ state: state })
+            });
+
+            const result: any = await response.json();
+
+            if(!result) {
+                this.onConnectionFailure();
+            }
+
+            this.predictionValueDisplay.classList.remove('hidden');
+            this.waitingIndicatorDisplay.classList.add('hidden');
+
+            return result;
+        }
+        catch(error: unknown) {
+            console.warn(error);
+
+            this.onConnectionFailure();
+            
+            return false;
+        }
+    }
+
     public StopSorting(): void {
         this.isSorting = false;
+        
+        let stream: MediaStream = this.sorterVideo.srcObject as MediaStream;
+
+        if(stream != null) {
+            stream.getTracks().forEach(track => track.stop())
+        }
+    
+        this.sorterVideo.pause();
+        this.sorterVideo.srcObject = null;
+    
+        this.htmlSortingWrapper.classList.add('hidden');
+        this.htmlBackgroundLayer.classList.add('hidden');
     }
 }

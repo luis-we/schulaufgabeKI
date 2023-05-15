@@ -12,6 +12,7 @@ const createClassImage: HTMLImageElement = document.querySelector('#create-class
 const modelInfo: HTMLParagraphElement = document.querySelector('#model-info')!;
 const modelCheckbox: HTMLImageElement = document.querySelector('#model-checkbox')!;
 
+const connectArduinoBtn: HTMLButtonElement = document.querySelector('#connect-arduino')!;
 const arduinoInfo: HTMLParagraphElement = document.querySelector('#arduino-info')!;
 const arduinoCheckbox: HTMLImageElement = document.querySelector('#arduino-checkbox')!;
 
@@ -20,19 +21,16 @@ const trainModelBtn: HTMLButtonElement = document.querySelector('#train-model')!
 const startSorter: HTMLButtonElement = document.querySelector('#start-sorting')!;
 const stopSorter: HTMLButtonElement = document.querySelector('#stop-sorting')!;
 
-const sorterVideo: HTMLVideoElement = document.querySelector('#sorter-video')!;
-const predictionVideo: HTMLVideoElement = document.querySelector('#sorter-video')!;
-
-const htmlBackgroundLayer: HTMLElement = document.querySelector('#background-layer')!;
-const htmlSortingWrapper: HTMLElement = document.querySelector('#sorting-wrapper')!;
+const infoMessage: HTMLDivElement = document.querySelector('#info-message')!;
+const infoMessageSender: HTMLSpanElement = document.querySelector('#sender')!;
+const infoMessageText: HTMLParagraphElement = document.querySelector('#message')!;
 
 const htmlClassTemplate: HTMLElement = CreateClassTemplate();
 
 const classes: Class[] = [];
 const imageClassifier: ImageClassifier = new ImageClassifier();
 
-var isPredicting = false;
-
+var arduinoConnected: boolean = false;
 var tinySorter: TinySorter | null = null; 
 
 imageClassifier.onModelUpdated = (model: tensorflow.Sequential | null) => OnModelUpdated(model);
@@ -45,9 +43,11 @@ createClassBtn.onclick = () => CreateClass();
 createClassBtn.onmouseenter = () => createClassImage.src = createClassImage.getAttribute('src-hover')!;  
 createClassBtn.onmouseleave = () => createClassImage.src = createClassImage.getAttribute('src-default')!;
 
+connectArduinoBtn.onclick = () => ConnectArduino();
+
 trainModelBtn.onclick = async () => StartTraining();
 
-startSorter.onclick = async () => StartSorting();
+startSorter.onclick = () => StartSorting();
 stopSorter.onclick = () => StopSorting();
 
 CreateClass();
@@ -55,7 +55,7 @@ CreateClass();
 
 function OnModelUpdated(model: tensorflow.Sequential | null): void {
     if(model == null) {
-        startSorter.setAttribute('disabled', '');
+        startSorter.toggleAttribute('disabled', true);
         modelCheckbox.src = modelCheckbox.getAttribute('src-invalid')!;
         modelInfo.innerText = 'kein Model vorhanden';
     }
@@ -63,11 +63,14 @@ function OnModelUpdated(model: tensorflow.Sequential | null): void {
         const classCount: number = Object.keys(imageClassifier.labels).length; 
 
         if(classCount != 2) {
-            startSorter.setAttribute('disabled', '');
+            startSorter.toggleAttribute('disabled', true);
             modelCheckbox.src = modelCheckbox.getAttribute('src-invalid')!;
         }
         else {
-            startSorter.removeAttribute('disabled');
+            if(arduinoConnected) {
+                startSorter.toggleAttribute('disabled', false);
+            }
+
             modelCheckbox.src = modelCheckbox.getAttribute('src-valid')!;
         }
 
@@ -75,34 +78,121 @@ function OnModelUpdated(model: tensorflow.Sequential | null): void {
     }
 }
 
-async function StartSorting(): Promise<void> {
-    CloseOpenCameras(null);
+async function DisplayInfoMessage(sender: string, message: string, messageClass: string | null): Promise<void> {
+    infoMessage.classList.add('fading');
+    infoMessage.classList.add('flex');
+    
+    if(messageClass != null) {
+        infoMessageText.classList.add(messageClass);
+    }
 
-    let All_mediaDevices: MediaDevices = navigator.mediaDevices;
+    infoMessageSender.innerText = sender;
+    infoMessageText.innerText = message;
 
-    if (!All_mediaDevices || !All_mediaDevices.getUserMedia) {
-        console.log('no camera found');
+    infoMessage.classList.remove('hidden');
+
+    await new Promise(resolve => setTimeout(resolve, 2900));
+
+    infoMessage.classList.add('hidden');
+
+    if(messageClass != null) {
+        infoMessageText.classList.remove(messageClass);
+    }
+
+    infoMessage.classList.remove('flex');
+    infoMessage.classList.remove('fading');
+}
+
+async function ConnectArduino(): Promise<void> {
+    const connectArduinoText: HTMLSpanElement = document.querySelector('#connect-arduino-text')!
+    const connectArduinoIndicator: HTMLSpanElement = document.querySelector('#connect-arduino-indicator')!
+
+    connectArduinoBtn.disabled = true;
+
+    connectArduinoText.classList.add('hidden');
+    connectArduinoIndicator.classList.remove('hidden');
+
+    let connected: boolean = await CheckArduinoConnection();
+
+    connectArduinoIndicator.classList.add('hidden');
+    connectArduinoText.classList.remove('hidden');
+
+    arduinoConnected = connected;
+
+    if(connected) {
+        arduinoInfo.innerText = 'verbunden'
+        arduinoCheckbox.src = arduinoCheckbox.getAttribute('src-valid')!;
+        
+        const classCount: number = Object.keys(imageClassifier.labels).length; 
+        
+        if(classCount == 2) {
+            startSorter.toggleAttribute('disabled', false);
+        }
+
+        DisplayInfoMessage('Arduino', 'Verbindung erfolgreich hergestellt', 'text-green-700');
+    }
+    else {
+        DisplayInfoMessage('Arduino', 'Verbindung konnte nicht hergestellt werden', 'text-red-700');
+
+        connectArduinoBtn.disabled = false;
+
         return;
     }
 
-    let stream: MediaStream = await All_mediaDevices.getUserMedia({
-        video: true,
-        audio: false
-    });
+    while(connected) {
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-    sorterVideo.srcObject = stream;
+        connected = await CheckArduinoConnection();
+    }
 
-    sorterVideo.onloadedmetadata = () => sorterVideo.play();
+    if(tinySorter != null) {
+        tinySorter.StopSorting();
+    }
 
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    arduinoInfo.innerText = 'nicht verbunden'
+    arduinoCheckbox.src = arduinoCheckbox.getAttribute('src-invalid')!;
+    arduinoConnected = connected;
 
-    htmlSortingWrapper.classList.remove('hidden');
-    htmlBackgroundLayer.classList.remove('hidden');
+    startSorter.toggleAttribute('disabled', true);
 
-    htmlSortingWrapper.classList.add('fixed');
-    htmlBackgroundLayer.classList.add('fixed');
+    DisplayInfoMessage('Arduino', 'Die Verbindung wurde unterbrochen', 'text-red-700');
 
-    tinySorter = new TinySorter(imageClassifier, sorterVideo);
+    connectArduinoBtn.disabled = false;
+}
+
+async function CheckArduinoConnection(): Promise<boolean> {
+    try {
+        const response: Response = await fetch('http://127.0.0.1:5000/connect', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+            });
+
+            const result: any = await response.json();
+
+            return result;
+    }
+    catch(error: unknown) {
+        console.warn(error);
+        return false;
+    }
+}
+
+function StartSorting(): void {
+    CloseOpenCameras(null);
+
+    tinySorter = new TinySorter(imageClassifier);
+
+    tinySorter.onConnectionFailure = () => {
+        if(tinySorter != null) {
+            tinySorter.StopSorting();
+        }
+
+        CheckArduinoConnection() 
+    };
+
+    tinySorter.Handle();
 }
 
 function StopSorting(): void {
@@ -111,18 +201,6 @@ function StopSorting(): void {
     tinySorter.StopSorting();
     
     tinySorter = null;
-
-    let stream: MediaStream = sorterVideo.srcObject as MediaStream;
-
-    if(stream != null) {
-        stream.getTracks().forEach(track => track.stop())
-    }
-
-    sorterVideo.pause();
-    sorterVideo.srcObject = null;
-
-    htmlSortingWrapper.classList.add('hidden');
-    htmlBackgroundLayer.classList.add('hidden');
 }
 
 async function StartTraining(): Promise<void> {
