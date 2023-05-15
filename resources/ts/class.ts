@@ -6,6 +6,10 @@ export default class Class {
     
     public get images(): { url: string, blob: Blob }[] { return this._images };
 
+    private env = false;
+    
+    public get isEnv(): boolean { return this.env };
+
     private classNameInput: HTMLInputElement;
 
     private openWebcamBtn: HTMLButtonElement;
@@ -67,13 +71,24 @@ export default class Class {
         return this.webcamActive;
     }
 
-    constructor(label: string, parentElement: HTMLElement, htmlTemplate: HTMLElement) {
+    constructor(label: string, parentElement: HTMLElement, htmlTemplate: HTMLElement, env: boolean = false) {
+        this.env = env;
+
         this.parentElement = parentElement;
         this.rootElement = htmlTemplate.cloneNode(true) as HTMLElement;
-        this.parentElement.append(this.rootElement);
+        
+        if(env) {
+            this.parentElement.append(this.rootElement);
+        }
+        else {
+            this.parentElement.prepend(this.rootElement);
+        }
         
         this.classNameInput = this.rootElement.querySelector('[class-label]')!;
-        this.classNameInput.oninput = () => this.UpdateLabel();
+
+        if(!env) {
+            this.classNameInput.oninput = () => this.UpdateLabel();
+        }
 
         this.label = label;
         this._images = [];
@@ -92,20 +107,30 @@ export default class Class {
         this.clearClassBtn = this.rootElement.querySelector('[clear-class')!;
 
         this.openWebcamBtn.onclick = () => this.OpenCamera();
-        this.closeWebcamBtn.onclick = () => this.CloseCamera(); 
-        this.deleteClassBtn.onclick = () => this.DeleteClass();
-        this.selectClassBtn.onclick = () => this.ToggleClass();
+        this.closeWebcamBtn.onclick = () => this.CloseCamera();
         this.clearClassBtn.onclick = () => this.ClearImages();
+        
+        if(!env) {
+            this.deleteClassBtn.onclick = () => this.DeleteClass();
+            this.selectClassBtn.onclick = () => this.ToggleClass();
+        }
 
         this.captureImageBtn.onmouseup = () => this.captureImages = false;
         this.captureImageBtn.onmouseleave = () => this.captureImages = false;
 
         this.captureImageBtn.onmousedown = () => this.StartCaptureImages();
 
-        this.onCameraOpen = new CustomEvent('onCameraOpen', { detail: this });
         this.onClassDelete = new CustomEvent('onClassDelete', { detail: this });
+        this.onCameraOpen = new CustomEvent('onCameraOpen', { detail: this });
 
         this.deleteable = false;
+
+        if(env) {
+            this.classNameInput.disabled = true;
+            this.classNameInput.classList.add('pointer-events-none', 'bg-white');
+
+            this.deleteClassBtn.classList.add('hidden');
+        }
     }
 
     private UpdateLabel(): void {
@@ -154,6 +179,7 @@ export default class Class {
         this._images = [];
 
         this.clearable = false;
+        if(this.env) this.selected = false; 
 
         this.onClassModified(this, true);
     }
@@ -289,7 +315,11 @@ export default class Class {
             textElement.innerText = `${this.images.length} Bilder hinzugefügt`;
         });
 
-        if(this.images.length > 0) this.clearable = true;
+        if(this.images.length > 0) {
+            this.clearable = true;
+
+            if(this.env) this.selected = true; 
+        }
 
         this.onClassModified(this, false);
     }

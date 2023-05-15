@@ -72,7 +72,7 @@ export class ImageClassifier {
             const trainImages = tensorflow.concat(preparedData.trainingData.images);
 
             await model.fit(trainImages, trainLabels, { epochs: 3, batchSize: 1 });
-    
+
             this._labels = preparedData.labels;
             this.model = model;
         }

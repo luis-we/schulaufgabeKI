@@ -9,12 +9,18 @@ const classWrapper: HTMLElement = document.querySelector('#class-wrapper')!;
 const createClassBtn: HTMLButtonElement = document.querySelector('#create-class')!;
 const createClassImage: HTMLImageElement = document.querySelector('#create-class-image')!;
 
+const setupEnvBtn: HTMLButtonElement = document.querySelector('#setup-env')!;
+const closeEnvSetupBtn: HTMLButtonElement = document.querySelector('#close-env-setup')!;
+const setupEnvWrapper: HTMLDivElement = document.querySelector('#setup-env-wrapper')!
+
 const modelInfo: HTMLParagraphElement = document.querySelector('#model-info')!;
 const modelCheckbox: HTMLImageElement = document.querySelector('#model-checkbox')!;
 
 const connectArduinoBtn: HTMLButtonElement = document.querySelector('#connect-arduino')!;
 const arduinoInfo: HTMLParagraphElement = document.querySelector('#arduino-info')!;
 const arduinoCheckbox: HTMLImageElement = document.querySelector('#arduino-checkbox')!;
+
+const envCheckbox: HTMLImageElement = document.querySelector('#env-checkbox')!;
 
 const trainModelBtn: HTMLButtonElement = document.querySelector('#train-model')!;
 
@@ -26,6 +32,8 @@ const infoMessageSender: HTMLSpanElement = document.querySelector('#sender')!;
 const infoMessageText: HTMLParagraphElement = document.querySelector('#message')!;
 
 const htmlClassTemplate: HTMLElement = CreateClassTemplate();
+
+const backgroundLayer: HTMLDivElement = document.querySelector('#background-layer')!
 
 const classes: Class[] = [];
 const imageClassifier: ImageClassifier = new ImageClassifier();
@@ -50,8 +58,31 @@ trainModelBtn.onclick = async () => StartTraining();
 startSorter.onclick = () => StartSorting();
 stopSorter.onclick = () => StopSorting();
 
+setupEnvBtn.onclick = () => OpenEnvSetup();
+closeEnvSetupBtn.onclick = () => CloseEnvSetup();
+
 CreateClass();
 CreateClass();
+
+const setupEnvClass: Class = new Class('Umgebung', setupEnvWrapper, htmlClassTemplate, true);
+
+classes.push(setupEnvClass);
+
+setupEnvClass.onClassModified = (_class: Class, checkOthers: boolean) => CheckClassModification(setupEnvClass, checkOthers);
+
+function OpenEnvSetup() {
+    CloseOpenCameras(null);
+
+    backgroundLayer.classList.remove('hidden');
+    setupEnvWrapper.classList.replace('hidden', 'flex');
+}
+
+function CloseEnvSetup() {
+    CloseOpenCameras(null);
+
+    backgroundLayer.classList.add('hidden');
+    setupEnvWrapper.classList.replace('flex', 'hidden');
+}
 
 function OnModelUpdated(model: tensorflow.Sequential | null): void {
     if(model == null) {
@@ -62,7 +93,7 @@ function OnModelUpdated(model: tensorflow.Sequential | null): void {
     else {
         const classCount: number = Object.keys(imageClassifier.labels).length; 
 
-        if(classCount != 2) {
+        if(classCount != 3) {
             startSorter.toggleAttribute('disabled', true);
             modelCheckbox.src = modelCheckbox.getAttribute('src-invalid')!;
         }
@@ -74,7 +105,7 @@ function OnModelUpdated(model: tensorflow.Sequential | null): void {
             modelCheckbox.src = modelCheckbox.getAttribute('src-valid')!;
         }
 
-        modelInfo.innerText = 'trainierte Klassen (' + classCount + ')';
+        modelInfo.innerText = 'trainierte Klassen (' + (classCount - 1) + ')';
     }
 }
 
@@ -125,8 +156,8 @@ async function ConnectArduino(): Promise<void> {
         
         const classCount: number = Object.keys(imageClassifier.labels).length; 
         
-        if(classCount == 2) {
-            startSorter.toggleAttribute('disabled', false);
+        if(classCount == 3) {
+            startSorter.disabled = false;
         }
 
         DisplayInfoMessage('Arduino', 'Verbindung erfolgreich hergestellt', 'text-green-700');
@@ -262,20 +293,30 @@ function CreateClass(): void {
     CheckClassModification(newClass, false);
 }
 
-function CheckClassModification(emitter: Class, modifyOthers: boolean): void {
-    CheckClassSelectable(emitter);
+function CheckClassModification(emitter: Class, modifyOthers: boolean): void {    
+    if(!emitter.isEnv) {
+        CheckClassSelectable(emitter);
+    }
+    else {
+        if(emitter.selected) {
+            envCheckbox.src = envCheckbox.getAttribute('src-valid')!;
+        }
+        else {
+            envCheckbox.src = envCheckbox.getAttribute('src-invalid')!;
+        }
+    }
 
     if(modifyOthers) {
         const classesWithouEmitter: Class[] = classes.filter(_class => _class !== emitter); 
 
         classesWithouEmitter.forEach(_class => {
-            CheckClassSelectable(_class);
+            if(!_class.isEnv) CheckClassSelectable(_class);
         });
     }
 
     const selectedClasses: Class[] = classes.filter(_class => _class.selected);
 
-    trainModelBtn.toggleAttribute('disabled', (selectedClasses.length < 2));
+    trainModelBtn.toggleAttribute('disabled', (selectedClasses.length < 3));
 }
 
 function CheckClassSelectable(emitter: Class) {
@@ -286,7 +327,7 @@ function CheckClassSelectable(emitter: Class) {
     const classesWithouEmitter: Class[] = classes.filter(_class => _class !== emitter);
 
     classesWithouEmitter.forEach(_class => {
-        if(emitter.label == _class.label && _class.selected) emitterSelectable = false;
+        if(emitter.label == _class.label && (_class.selected || _class.isEnv)) emitterSelectable = false;
     });
 
     emitter.selectable = emitterSelectable; 
@@ -296,7 +337,7 @@ function DeleteClass(emitter: Class): void {
     let index: number = classes.indexOf(emitter);
     classes.splice(index, 1);
 
-    if(classes.length <= 2) {
+    if(classes.length <= 3) {
         classes.forEach((_class: Class) => {
             _class.deleteable = false;
         });

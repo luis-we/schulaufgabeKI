@@ -8,6 +8,10 @@
   width: 32rem;
 }
 
+.env-class-width {
+  width: 40rem;
+}
+
 .left-fixed-distance {
   left: 42rem;
 }

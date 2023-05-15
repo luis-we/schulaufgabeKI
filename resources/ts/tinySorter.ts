@@ -91,6 +91,9 @@ export default class TinySorter {
         this.firstClassLabel = Object.entries(imageClassifier.labels)[0][1].replace('_', ' ');
         this.secondClassLabel = Object.entries(imageClassifier.labels)[1][1].replace('_', ' ');
 
+        this.predictionValueDisplay.classList.remove('hidden');
+        this.waitingIndicatorDisplay.classList.add('hidden');
+
         this.predictionLabel = 'Unbestimmt'
         this.predictionValue = 0;
     }
@@ -132,6 +135,12 @@ export default class TinySorter {
 
         await new Promise(resolve => setTimeout(resolve, milliseconds));
 
+        let prediction: Prediction | null = null;
+
+        while(prediction == null) {
+            prediction = await this.MakePrediction(1, true);
+        }
+
         this.predictionValueDisplay.classList.remove('hidden');
         this.waitingIndicatorDisplay.classList.add('hidden');
     }
@@ -150,28 +159,28 @@ export default class TinySorter {
             }
 
             if(prediction.result.class == Object.entries(this.imageClassifier.labels)[0][1]) {
+                this.firstClassCounter = this._firstClassCounter + 1;
+
                 const label: string = Object.entries(this.imageClassifier.labels)[0][1].replace('_', ' ');
                 const sucessfull: boolean = await this.SendPredictionToArduino(1, label);
                 
                 if(!sucessfull) return;
-
-                this.firstClassCounter = this._firstClassCounter + 1;
             }
             
             if(prediction.result.class == Object.entries(this.imageClassifier.labels)[1][1]) {
+                this.secondClassCounter = this._secondClassCounter + 1;
+
                 const label: string = Object.entries(this.imageClassifier.labels)[1][1].replace('_', ' ');
                 const sucessfull: boolean = await this.SendPredictionToArduino(2, label);
                 
                 if(!sucessfull) return;
-
-                this.secondClassCounter = this._secondClassCounter + 1;
             }
 
-            await this.Wait(5000);
+            await this.Wait(3000);
         }
     }
 
-    private async MakePrediction(iterations: number): Promise<Prediction | null> {
+    private async MakePrediction(iterations: number, detecting: boolean = false): Promise<Prediction | null> {
         let prediction: Prediction | null = null;
 
         for(let iterationCount: number = 0; iterationCount < iterations; iterationCount++) {
@@ -182,13 +191,23 @@ export default class TinySorter {
                 continue;
             }
 
-            this.predictionValue = prediction.result.percentage;
+            if(prediction.result.class == Object.entries(this.imageClassifier.labels)[2][1]) {
+                if(prediction.predictions[0].percentage > prediction.predictions[1].percentage) {
+                    this.predictionValue = prediction.predictions[0].percentage;
+                }
+                else {
+                    this.predictionValue = prediction.predictions[1].percentage;
+                }
+            }
+            else {
+                this.predictionValue = prediction.result.percentage;
+            }
     
-            this.firstClassPredictionValue = prediction.predictions[0].percentage;
-            this.secondClassPredictionValue = prediction.predictions[1].percentage
+            if(!detecting) this.firstClassPredictionValue = prediction.predictions[0].percentage;
+            if(!detecting) this.secondClassPredictionValue = prediction.predictions[1].percentage;
 
-            if(prediction.result.percentage < 75) {
-                this.predictionLabel = 'Unbestimmt'
+            if(prediction.result.percentage < 50 || prediction.result.class == Object.entries(this.imageClassifier.labels)[2][1]) {
+                if(!detecting) this.predictionLabel = 'Unbestimmt';
 
                 prediction = null;
             }
