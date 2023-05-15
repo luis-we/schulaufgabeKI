@@ -150,7 +150,8 @@ export default class TinySorter {
             }
 
             if(prediction.result.class == Object.entries(this.imageClassifier.labels)[0][1]) {
-                const sucessfull: boolean = await this.SendPredictionToArduino(1);
+                const label: string = Object.entries(this.imageClassifier.labels)[0][1].replace('_', ' ');
+                const sucessfull: boolean = await this.SendPredictionToArduino(1, label);
                 
                 if(!sucessfull) return;
 
@@ -158,7 +159,8 @@ export default class TinySorter {
             }
             
             if(prediction.result.class == Object.entries(this.imageClassifier.labels)[1][1]) {
-                const sucessfull: boolean = await this.SendPredictionToArduino(2);
+                const label: string = Object.entries(this.imageClassifier.labels)[1][1].replace('_', ' ');
+                const sucessfull: boolean = await this.SendPredictionToArduino(2, label);
                 
                 if(!sucessfull) return;
 
@@ -200,7 +202,7 @@ export default class TinySorter {
         return prediction;
     }
 
-    private async SendPredictionToArduino(state: number): Promise<boolean> {
+    private async SendPredictionToArduino(state: number, class_name: string): Promise<boolean> {
         try {
             this.firstClassPredictionValue = 0;
             this.secondClassPredictionValue = 0;
@@ -215,7 +217,7 @@ export default class TinySorter {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({ state: state })
+                body: JSON.stringify({ state: state, class_name: class_name })
             });
 
             const result: any = await response.json();

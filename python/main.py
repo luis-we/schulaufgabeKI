@@ -21,6 +21,7 @@ app.add_middleware(
 
 class Data(BaseModel):
     state: int
+    class_name: str
 
 
 ser = serial.Serial('COM4', 9600)
@@ -34,8 +35,11 @@ async def controllServo(data: Data):
     if(connectionSuccess):
         if data.state == 1:
             ser.write(b'1')
+            ser.write(data.class_name.encode())
+
         elif data.state == 2:
             ser.write(b'2')
+            ser.write(data.class_name.encode())
 
         await asyncio.sleep(3)
 
